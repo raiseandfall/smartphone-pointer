@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Main site template</title>
+<style type="text/css">
+body 	{ background: #FFF; font-family: sans-serif; overflow: hidden; font-size: 20px;}
+.point	{ width: 40px; height: 40px; position: absolute; }
+h2,h3	{ margin-left:20px; z-index:100; }
+ul, li	{ list-style-type: none; }
+li		{ margin: 10px 0px; }
+</style>
+</head>
+<body>
+    <div id="points"></div>
+   	<h2>JVST Summit app</h2>
+    <h3>NodeJS / socket.io</h3>
+    <ul>
+    	<li><b>1.</b> Go to <span style="color:#1a6ec9;text-decoration:underline;"><b>http://tinyurl.com/JVSTSummit</b></span> on your mobile browser</span></li>
+    	<li><b>2.</b> Your mobile screen color symbolizes the color of your square on the app</li>
+    	<li><b>3.</b> Touch your mobile screen !</li>
+    </ul>
+    <script src="socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+    <script>
+      	// Establish the connection with the server
+      	var socket = io.connect('http://ec2-54-245-15-253.us-west-2.compute.amazonaws.com:8080/'); 
+ 		
+      	PointsSystem = {
+      		addPoint : function(id, color){
+      			var posX = Math.floor(Math.random() * ($(window).width() - 20)) + 20;
+      			var posY = Math.floor(Math.random() * ($(window).height() - 20)) + 20;
+      			$('#points').append('<div id="point' + id + '" class="point" style="background-color:' + color + ';left:'+posX+'px;top:'+posY+'px""></div>');
+      		}
+      	}
+      	
+      	socket.on('add_user_point', function(data){
+      		PointsSystem.addPoint(data.id, data.color);
+      	});
+      	
+      	socket.on('user_touch_started', function(data){
+      		$('#point'+data).animate({'width': '70', 'height': '70', 'left': '-=15', 'top': '-=15'}, 100, 'easeOutElastic');
+      	});
+      	
+      	socket.on('user_touch_ended', function(data){
+      		$('#point'+data).animate({'width': '40', 'height': '40', 'left': '+=15', 'top': '+=15'}, 100, 'easeOutElastic');
+      	});
+      	
+      	socket.on('user_touch_moved', function(data){
+      		var pX = parseFloat($('#point'+data.id).css('left')) - 2*data.pos[0];
+      		var pY = parseFloat($('#point'+data.id).css('top')) - 2*data.pos[1];
+      		console.log('update pos ::  ( ' + pX + ', ' + pY + ')');
+      		if(pX > 0 && pX < ($(window).width()-70) && pY > 0 && pY < ($(window).height()-70)){
+      			$('#point'+data.id).css({'left': pX, 'top': pY});
+      		}
+      	});
+      	
+      	socket.on('user_disconnect', function(data){
+      		$('#point'+data).remove();
+      	});
+      	
+      	$.easing.easeInOutExpo = function(x, t, b, c, d) {
+    		if (t==0) return b;
+    		if (t==d) return b+c;
+    		if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b;
+    		return c/2 * (-Math.pow(2, -10 * --t) + 2) + b;
+    	}; 
+
+    	$.easing.easeOutElastic = function (x, t, b, c, d) {
+    		var s=1.70158;var p=0;var a=c;
+    		if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
+    		if (a < Math.abs(c)) { a=c; var s=p/4; }
+    		else var s = p/(2*Math.PI) * Math.asin (c/a);
+    		return a*Math.pow(2,-10*t) * Math.sin( (t*d-s)*(2*Math.PI)/p ) + c + b;
+    	};
+      	</script>
+  	</body>
+</html>
